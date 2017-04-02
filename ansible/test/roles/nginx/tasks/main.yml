@@ -1,0 +1,42 @@
+---
+# tasks file for nginx
+- name: libselinux-python and epel
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - libselinux-python
+    - epel-release
+
+- name: nginx install
+  yum:
+    name: nginx
+    state: present
+
+- name: nginx start
+  service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: nginx config file
+  template:
+    src: nginx.j2.conf
+    dest: /etc/nginx/nginx.conf
+    validate: nginx -t -c %s
+  notify:
+    - nginx reload
+
+- name: add group
+  group:
+    name: "{{ nginx_group }}"
+    system: true
+
+- name: add user
+  user:
+    name: "{{ nginx_user }}"
+    home: /var/lib/nginx
+    shell: /sbin/nologin
+    group: "{{ nginx_group }}"
+    append: true
+    system: true

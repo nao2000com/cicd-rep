@@ -1,0 +1,3 @@
+---
+# vars file for php-fpm
+php_fpm_config_dir: /etc/php-fpm.d

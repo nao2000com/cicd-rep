@@ -1,0 +1,6 @@
+---
+- name: start 
+  hosts: web1
+  become: true
+  roles:
+    - role: nginx

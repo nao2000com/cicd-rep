@@ -1,0 +1,28 @@
+---
+# tasks file for php-fpm
+#- name: Remi install
+#  yum:
+#    name: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+
+- name: php-fpm install
+  yum:
+    name: "{{ item }}"
+#    enablerepo: "remi-php{{ php_fpm_php_version|replace('.','') }}"
+  with_items:
+    - php-fpm
+    - php-devel
+    - php-enchant
+    - php-mbstring
+    - php-process
+    - php-xml
+    - php-gd
+    - "{{ php_fpm_additional_packages }}"
+  notify:
+    - PHP-FPM restart
+
+- name: php start
+  service:
+    name: php-fpm
+    state: started
+    enabled: true
+

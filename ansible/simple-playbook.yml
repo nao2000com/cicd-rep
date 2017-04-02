@@ -1,0 +1,12 @@
+---
+- hosts: web1
+  become: yes
+  tasks:
+    - name: be sure httpd is installed
+      yum: name=httpd state=installed
+
+    - name: be sure httpd is running and enabled
+      service: name=httpd state=started enabled=yes
+
+    - name: gathering data task example
+      command: echo {{ ansible_eth0.ipv4.address }}

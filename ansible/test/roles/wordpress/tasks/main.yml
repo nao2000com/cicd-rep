@@ -1,0 +1,77 @@
+---
+# tasks file for wordpress
+- name: wordpress group add
+  group:
+    name: "{{ wordpress_group }}"
+    system: true
+
+- name: wordpress user add
+  user:
+    name: "{{ wordpress_user }}"
+    home: "{{ wordpress_home }}"
+    shell: /sbin/nologin
+    groups: "{{ wordpress_group }}"
+    append: true
+    createhome: false
+    system: true
+
+- name: wordpress src
+  unarchive:
+    src: "{{ wordpress_src_url }}"
+    dest: "{{ wordpress_document_root }}"
+    remote_src: true
+    owner: "{{ wordpress_user }}"
+    group: "{{ wordpress_group }}"
+
+- block:
+    - name: uniqe key
+      command: "cat {{ wordpress_home }}/unique_keys"
+      changed_when: false
+      run_once: true
+      delegate_to: "{{ ansible_play_hosts[0] }}"
+      register: cat_unique_keys
+  rescue:
+    - name: get uniqe key
+      uri:
+        url: https://api.wordpress.org/secret-key/1.1/salt/
+        return_content: true
+      run_once: true
+      register: get_unique_keys
+  always:
+    - name: set unique key
+      set_fact:
+        wordpress_unique_keys: "{{ ( get_unique_keys.content if cat_unique_keys|failed else cat_unique_keys.stdout)|trim }}"
+
+    - name: save unique key
+      copy:
+        content: "{{ wordpress_unique_keys }}"
+        dest: "{{ wordpress_home }}/unique_keys"
+
+    - name: wordpress template set
+      template:
+        src: wp-config.j2.php
+        dest: "{{ wordpress_home }}/wp-config.php"
+        owner: "{{ wordpress_user }}"
+        group: "{{ wordpress_group }}"
+
+    - name: php-fpm template set
+      template:
+        src: wordpress.fpm.j2.conf
+        dest: "{{ wordpress_php_fpm_config_dir }}/wordpress.conf"
+      notify:
+        - PHP-FPM restart
+
+    - name: PHP-FPM file test
+      command: php-fpm -t
+      changed_when: false
+
+    - name: nginx template set
+      template:
+        src: wordpress.nginx.j2.conf
+        dest: "{{ wordpress_nginx_config_dir }}/wordpress.conf"
+      notify:
+        - nginx reload
+
+    - name: nginx file test
+      command: nginx -t
+      changed_when: false

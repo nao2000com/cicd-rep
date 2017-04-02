@@ -1,0 +1,4 @@
+---
+# defaults file for php-fpm
+php_fpm_php_version: "7.0"
+php_fpm_additional_packages: []
